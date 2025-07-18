@@ -145,5 +145,42 @@ finally:
     out.release()
     GPIO.cleanup()  # Clean up GPIO pins
     print("Recording stopped, video saved to", output_path)
-	
+import logging
 
+logging.basicConfig(filename='traffic_system.log', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+def load_yolo_model(model_path, conf=0.3, iou=0.45):
+    try:
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
+        model.conf = conf
+        model.iou = iou
+        logging.info("YOLOv5 model loaded successfully.")
+        return model
+    except Exception as e:
+        logging.error(f"Failed to load YOLOv5 model: {e}")
+        raise RuntimeError(f"YOLOv5 model loading failed: {e}")
+class CameraManager:
+    def __init__(self, width=640, height=480, format="RGB888"):
+        self.width = width
+        self.height = height
+        self.format = format
+        self.picam2 = Picamera2()
+        try:
+            config = self.picam2.create_video_configuration(main={"size": (width, height), "format": format})
+            self.picam2.configure(config)
+            self.picam2.start_preview(NullPreview())
+        except Exception as e:
+            print(f"Error configuring camera: {e}")
+            raise
+
+    def start(self):
+        self.picam2.start()
+        print("Camera started.")
+
+    def capture_frame(self):
+        frame = self.picam2.capture_array()
+        return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    def stop(self):
+        self.picam2.stop()
