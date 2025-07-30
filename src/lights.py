@@ -1,6 +1,8 @@
 import RPi.GPIO as GPIO
 import time
 
+
+
 # Define GPIO pins for Lane A and Lane B
 LANE_A_PINS = {
     'red': 17,
